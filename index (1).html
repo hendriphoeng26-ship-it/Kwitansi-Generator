@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generator Kwitansi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Grenze:wght@300;400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12232e;
+  --ink-soft:#1c3543;
+  --paper:#e6ebee;
+  --text-dark:#0d1b23;
+  --muted:#7d99a8;
+  --amber:#f2b705;
+  --rule:#17262e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--text-dark);font-family:'IBM Plex Sans',system-ui,sans-serif;min-height:100vh}
+
+/* ---------- Layout ---------- */
+.app{display:flex;min-height:100vh;align-items:stretch}
+.panel{width:400px;flex:0 0 400px;background:var(--ink);color:#cddce5;padding:28px 26px 40px;overflow-y:auto;max-height:100vh}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;gap:20px;min-width:0}
+
+/* ---------- Panel ---------- */
+.brand{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.brand h1{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;margin:0;letter-spacing:.02em;color:#fff}
+.brand span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.tagline{font-size:12.5px;line-height:1.55;color:var(--muted);margin:0 0 26px}
+.group{margin-bottom:17px}
+label{display:block;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+input[type=text],input[type=date],textarea{width:100%;background:var(--ink-soft);border:1px solid #2b4a5c;color:#fff;padding:10px 12px;font-size:14px;border-radius:3px;font-family:'IBM Plex Sans',sans-serif}
+input.num{font-family:'IBM Plex Mono',monospace;font-size:16px}
+textarea{resize:vertical;min-height:56px;line-height:1.45}
+input:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:transparent}
+.row2{display:flex;gap:12px}
+.row2>div{flex:1;min-width:0}
+.hint{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.toggles{border-top:1px solid #24404f;margin-top:24px;padding-top:18px;display:flex;flex-direction:column;gap:11px}
+.toggle{display:flex;align-items:center;gap:10px;font-size:13px;color:#b7cdd9;cursor:pointer}
+.toggle input{accent-color:var(--amber);width:15px;height:15px;cursor:pointer}
+.actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+button{font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;padding:12px 14px;border-radius:3px;cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s}
+.btn-primary{background:var(--amber);color:#1a1200;border-color:var(--amber)}
+.btn-primary:hover{background:#ffc61a}
+.btn-ghost{background:transparent;color:#b7cdd9;border-color:#2f4f61}
+.btn-ghost:hover{border-color:#4d7e97;color:#fff}
+button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+button:disabled{opacity:.5;cursor:wait}
+
+/* ---------- Kwitansi : 1000 x 448, proporsi diukur dari foto ---------- */
+.kwitansi{width:1000px;height:448px;display:flex;gap:16px;background:#fff;position:relative}
+.stub,.main{position:relative;overflow:hidden;background:#fff}
+.stub{width:160px;flex:0 0 160px}
+.main{flex:1}
+.bg{position:absolute;inset:0;pointer-events:none}
+.bg svg{width:100%;height:100%;display:block}
+.content{position:relative;height:100%;padding:38px 61px 40px 43px;display:flex;flex-direction:column}
+
+.lbl{font-family:'Grenze',serif;font-weight:300;font-size:21px;color:#101c22;white-space:nowrap;line-height:1}
+.val{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:20px;letter-spacing:.05em;color:#0b1418;line-height:1.15;white-space:nowrap;overflow:hidden;display:block}
+
+.no-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:16px}
+.no-line{width:250px;border-bottom:1.3px solid var(--rule);padding:0 0 4px 42px;min-height:26px}
+
+.field{display:flex;align-items:flex-end;margin-bottom:12px}
+.field .lbl{width:181px;flex:0 0 181px;padding-bottom:4px}
+.colon{font-family:'Grenze',serif;font-size:21px;padding-bottom:4px;width:16px;flex:0 0 16px}
+.fill{flex:1;min-width:0;border-bottom:1.3px solid var(--rule);padding:0 0 4px 6px;min-height:28px}
+
+.blank-line{height:31px;border-bottom:1.3px solid var(--rule)}
+.blank-line.first{margin-top:6px}
+
+.spacer{flex:1}
+
+.date-row{display:flex;justify-content:flex-end;margin-bottom:26px}
+.place{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:19px;letter-spacing:.045em;color:#0b1418;padding:0 10px 4px;border-bottom:1.3px solid var(--rule);min-width:230px;text-align:right;white-space:nowrap}
+
+.amount{display:flex;align-items:flex-end;gap:12px}
+.amount .rp{font-family:'Grenze',serif;font-weight:300;font-size:25px;line-height:1;padding-bottom:4px}
+.amount .box{min-width:220px;padding:9px 18px 10px;font-family:'Cormorant Garamond',serif;font-weight:600;font-size:23px;letter-spacing:.06em;color:#0b1418;border-bottom:1.4px solid var(--rule);white-space:nowrap}
+
+.hatch{background-image:repeating-linear-gradient(to bottom,rgba(20,70,92,.45) 0,rgba(20,70,92,.45) 1px,transparent 1px,transparent 6px);text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 6px #fff}
+
+.stagenote{font-size:12px;color:#6b8492;text-align:center;max-width:640px;line-height:1.5}
+.frame{width:100%;display:flex;justify-content:center}
+.scaler{transform-origin:top center}
+
+@media (max-width:1000px){
+  .app{flex-direction:column}
+  .panel{width:100%;flex:none;max-height:none;order:2}
+  .stage{order:1;padding:22px 16px 8px}
+}
+@media print{
+  @page{size:landscape;margin:10mm}
+  .panel,.stagenote{display:none!important}
+  body{background:#fff}
+  .stage{padding:0}
+  .scaler{transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="panel">
+    <div class="brand"><h1>Kwitansi</h1><span>Generator</span></div>
+    <p class="tagline">Isi kolom di bawah, kwitansi tersusun langsung di samping. Unduh sebagai PNG atau cetak ke PDF.</p>
+
+    <div class="group">
+      <label for="f-no">Nomor</label>
+      <input type="text" id="f-no" value="17" autocomplete="off">
+    </div>
+
+    <div class="group">
+      <label for="f-dari">Telah terima dari</label>
+      <input type="text" id="f-dari" value="Bakmi Kelinci" autocomplete="off">
+    </div>
+
+    <div class="group">
+      <label for="f-rp">Uang sejumlah (Rp)</label>
+      <input type="text" id="f-rp" class="num" value="1.800.000" inputmode="numeric" autocomplete="off">
+      <p class="hint">Terbilang tersusun otomatis. Ketik di kolom terbilang untuk menimpanya.</p>
+    </div>
+
+    <div class="group">
+      <label for="f-terbilang">Terbilang</label>
+      <textarea id="f-terbilang"></textarea>
+      <button type="button" class="btn-ghost" id="btn-recount" style="margin-top:8px;width:100%">Susun ulang dari angka</button>
+    </div>
+
+    <div class="group">
+      <label for="f-untuk">Untuk pembayaran</label>
+      <textarea id="f-untuk">latihan pemadam kebakaran</textarea>
+    </div>
+
+    <div class="group row2">
+      <div>
+        <label for="f-kota">Kota</label>
+        <input type="text" id="f-kota" value="Jakarta" autocomplete="off">
+      </div>
+      <div>
+        <label for="f-tgl">Tanggal</label>
+        <input type="date" id="f-tgl">
+      </div>
+    </div>
+
+    <div class="toggles">
+      <label class="toggle"><input type="checkbox" id="t-stub" checked> Tampilkan bonggol kiri</label>
+      <label class="toggle"><input type="checkbox" id="t-bg" checked> Tampilkan latar guilloche</label>
+      <label class="toggle"><input type="checkbox" id="t-hatch" checked> Arsir pengaman pada nominal</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btn-png">Unduh PNG</button>
+      <button class="btn-ghost" id="btn-print">Cetak / simpan PDF</button>
+      <button class="btn-ghost" id="btn-clear">Kosongkan isian</button>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="frame">
+      <div class="scaler" id="scaler">
+        <div class="kwitansi" id="kwitansi">
+
+          <div class="stub" id="stub"><div class="bg" id="bg-stub"></div></div>
+
+          <div class="main">
+            <div class="bg" id="bg-main"></div>
+            <div class="content">
+
+              <div class="no-row">
+                <span class="lbl">No</span>
+                <span class="no-line val" id="o-no">17</span>
+              </div>
+
+              <div class="field">
+                <span class="lbl">Telah terima dari</span><span class="colon">:</span>
+                <span class="fill val" id="o-dari">Bakmi Kelinci</span>
+              </div>
+
+              <div class="field">
+                <span class="lbl">Uang sejumlah</span><span class="colon">:</span>
+                <span class="fill val hatch" id="o-terbilang"></span>
+              </div>
+
+              <div class="field">
+                <span class="lbl">Untuk pembayaran</span><span class="colon">:</span>
+                <span class="fill val" id="o-untuk">latihan pemadam kebakaran</span>
+              </div>
+
+              <div class="blank-line first"></div>
+              <div class="blank-line"></div>
+
+              <div class="spacer"></div>
+
+              <div class="date-row">
+                <span class="place" id="o-place">Jakarta, 12 Agustus 2026</span>
+              </div>
+
+              <div class="amount">
+                <span class="rp">Rp.</span>
+                <span class="box hatch" id="o-rp">1.800.000</span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <p class="stagenote">Kwitansi ini dokumen yang Anda terbitkan sendiri. Simpan arsipnya dan pastikan isinya sesuai transaksi yang benar-benar terjadi.</p>
+  </main>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var SATUAN = ['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
+  function terbilang(n){
+    n = Math.floor(Math.abs(n));
+    if(n < 12) return SATUAN[n];
+    if(n < 20) return terbilang(n-10) + ' belas';
+    if(n < 100) return terbilang(Math.floor(n/10)) + ' puluh ' + terbilang(n%10);
+    if(n < 200) return 'seratus ' + terbilang(n-100);
+    if(n < 1000) return terbilang(Math.floor(n/100)) + ' ratus ' + terbilang(n%100);
+    if(n < 2000) return 'seribu ' + terbilang(n-1000);
+    if(n < 1e6) return terbilang(Math.floor(n/1e3)) + ' ribu ' + terbilang(n%1e3);
+    if(n < 1e9) return terbilang(Math.floor(n/1e6)) + ' juta ' + terbilang(n%1e6);
+    if(n < 1e12) return terbilang(Math.floor(n/1e9)) + ' miliar ' + terbilang(n%1e9);
+    return terbilang(Math.floor(n/1e12)) + ' triliun ' + terbilang(n%1e12);
+  }
+  function terbilangRupiah(n){
+    if(!n) return 'nol rupiah';
+    return terbilang(n).replace(/\s+/g,' ').trim() + ' rupiah';
+  }
+
+  function onlyDigits(s){ return (s||'').replace(/\D/g,''); }
+  function group(s){ return s.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+
+  var BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  function formatTanggal(iso){
+    if(!iso) return '';
+    var p = iso.split('-');
+    if(p.length !== 3) return '';
+    return parseInt(p[2],10) + ' ' + BULAN[parseInt(p[1],10)-1] + ' ' + p[0];
+  }
+
+  function rosettePath(cx,cy,R,r,d,turns,steps){
+    var out = [], i, t, x, y;
+    for(i=0;i<=steps;i++){
+      t = i/steps * Math.PI * 2 * turns;
+      x = cx + (R-r)*Math.cos(t) + d*Math.cos((R-r)/r*t);
+      y = cy + (R-r)*Math.sin(t) - d*Math.sin((R-r)/r*t);
+      out.push((i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1));
+    }
+    return out.join(' ');
+  }
+
+  function buildBg(w,h,rosettes,seed){
+    var id = 'lat' + seed;
+    var s = '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">';
+    s += '<defs><pattern id="'+id+'" width="15" height="15" patternUnits="userSpaceOnUse">'
+       + '<path d="M7.5 0 L15 7.5 L7.5 15 L0 7.5 Z" fill="none" stroke="#5cb9e0" stroke-width="1.1" opacity=".55"/>'
+       + '<circle cx="7.5" cy="7.5" r="1.5" fill="#8ed6f0" opacity=".5"/></pattern></defs>';
+    s += '<rect width="'+w+'" height="'+h+'" fill="#fff"/>';
+    s += '<rect width="'+w+'" height="'+h+'" fill="url(#'+id+')"/>';
+    s += '<g fill="none" stroke="#ffffff" stroke-width="1.15" opacity=".85">';
+    rosettes.forEach(function(o){ s += '<path d="' + rosettePath(o.cx,o.cy,o.R,o.r,o.d,o.turns,o.steps) + '"/>'; });
+    s += '</g><g fill="none" stroke="#2f9fc9" stroke-width=".7" opacity=".45">';
+    rosettes.forEach(function(o){ s += '<path d="' + rosettePath(o.cx,o.cy,o.R*0.42,o.r*0.42,o.d*0.42,o.turns,Math.round(o.steps*0.7)) + '"/>'; });
+    s += '</g>';
+    s += '<rect x="4" y="4" width="'+(w-8)+'" height="'+(h-8)+'" fill="none" stroke="#4fb0d8" stroke-width="2.5" opacity=".8"/>';
+    s += '<rect x="10" y="10" width="'+(w-20)+'" height="'+(h-20)+'" fill="none" stroke="#8ed6f0" stroke-width="1" opacity=".9"/>';
+    s += '</svg>';
+    return s;
+  }
+
+  function renderBackgrounds(){
+    var mw = 824, mh = 448, sw = 160, sh = 448;
+    document.getElementById('bg-main').innerHTML = buildBg(mw, mh, [
+      {cx:mw*0.50, cy:mh*0.50, R:250, r:71, d:118, turns:71, steps:2600},
+      {cx:mw*0.15, cy:mh*0.46, R:118, r:33, d:56,  turns:33, steps:1400},
+      {cx:mw*0.86, cy:mh*0.46, R:118, r:33, d:56,  turns:33, steps:1400}
+    ], 1);
+    document.getElementById('bg-stub').innerHTML = buildBg(sw, sh, [
+      {cx:sw*0.5, cy:sh*0.30, R:90, r:26, d:43, turns:26, steps:1300},
+      {cx:sw*0.5, cy:sh*0.62, R:66, r:19, d:32, turns:19, steps:1000}
+    ], 2);
+  }
+
+  var el = {
+    no:document.getElementById('f-no'),
+    dari:document.getElementById('f-dari'),
+    rp:document.getElementById('f-rp'),
+    terbilang:document.getElementById('f-terbilang'),
+    untuk:document.getElementById('f-untuk'),
+    kota:document.getElementById('f-kota'),
+    tgl:document.getElementById('f-tgl'),
+    oNo:document.getElementById('o-no'),
+    oDari:document.getElementById('o-dari'),
+    oTerbilang:document.getElementById('o-terbilang'),
+    oUntuk:document.getElementById('o-untuk'),
+    oRp:document.getElementById('o-rp'),
+    oPlace:document.getElementById('o-place'),
+    stub:document.getElementById('stub'),
+    kwitansi:document.getElementById('kwitansi'),
+    scaler:document.getElementById('scaler')
+  };
+
+  var manualTerbilang = false;
+  function nilai(){ return parseInt(onlyDigits(el.rp.value) || '0', 10); }
+
+  function muatkan(node, maxPx, minPx){
+    node.style.fontSize = maxPx + 'px';
+    var size = maxPx;
+    while(node.scrollWidth > node.clientWidth + 1 && size > minPx){
+      size -= 0.5;
+      node.style.fontSize = size + 'px';
+    }
+  }
+
+  function sync(){
+    el.oNo.textContent = el.no.value;
+    el.oDari.textContent = el.dari.value;
+    el.oUntuk.textContent = el.untuk.value;
+    el.oRp.textContent = group(onlyDigits(el.rp.value)) || '0';
+    if(!manualTerbilang) el.terbilang.value = terbilangRupiah(nilai());
+    el.oTerbilang.textContent = el.terbilang.value;
+    var tgl = formatTanggal(el.tgl.value);
+    el.oPlace.textContent = el.kota.value + (tgl ? ', ' + tgl : '');
+    muatkan(el.oTerbilang, 20, 12);
+    muatkan(el.oUntuk, 20, 12);
+    muatkan(el.oDari, 20, 13);
+  }
+
+  ['no','dari','untuk','kota','tgl'].forEach(function(k){ el[k].addEventListener('input', sync); });
+
+  el.rp.addEventListener('input', function(){
+    var pos = el.rp.selectionStart, len = el.rp.value.length;
+    el.rp.value = group(onlyDigits(el.rp.value));
+    var diff = el.rp.value.length - len;
+    el.rp.setSelectionRange(Math.max(0,pos+diff), Math.max(0,pos+diff));
+    manualTerbilang = false;
+    sync();
+  });
+
+  el.terbilang.addEventListener('input', function(){
+    manualTerbilang = true;
+    el.oTerbilang.textContent = el.terbilang.value;
+    muatkan(el.oTerbilang, 20, 12);
+  });
+
+  document.getElementById('btn-recount').addEventListener('click', function(){
+    manualTerbilang = false; sync();
+  });
+
+  document.getElementById('t-stub').addEventListener('change', function(){
+    el.stub.style.display = this.checked ? '' : 'none';
+    sync(); fit();
+  });
+  document.getElementById('t-bg').addEventListener('change', function(){
+    var v = this.checked ? '' : 'none';
+    document.getElementById('bg-main').style.display = v;
+    document.getElementById('bg-stub').style.display = v;
+  });
+  document.getElementById('t-hatch').addEventListener('change', function(){
+    var on = this.checked;
+    el.oTerbilang.classList.toggle('hatch', on);
+    el.oRp.classList.toggle('hatch', on);
+  });
+
+  document.getElementById('btn-clear').addEventListener('click', function(){
+    el.no.value=''; el.dari.value=''; el.rp.value=''; el.untuk.value='';
+    manualTerbilang = false; sync(); el.no.focus();
+  });
+
+  function fit(){
+    var stage = el.scaler.parentElement;
+    var k = Math.min(1, stage.clientWidth / el.kwitansi.offsetWidth);
+    el.scaler.style.transform = 'scale(' + k + ')';
+    stage.style.height = (el.kwitansi.offsetHeight * k) + 'px';
+  }
+  window.addEventListener('resize', fit);
+
+  document.getElementById('btn-png').addEventListener('click', function(){
+    var btn = this, prev = el.scaler.style.transform;
+    btn.disabled = true; btn.textContent = 'Menyiapkan…';
+    el.scaler.style.transform = 'scale(1)';
+    html2canvas(el.kwitansi, {scale:3, backgroundColor:'#ffffff', useCORS:true, logging:false})
+      .then(function(canvas){
+        var a = document.createElement('a');
+        a.download = 'kwitansi-' + ((el.no.value || 'baru').replace(/[^\w-]/g,'')) + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      })
+      .catch(function(){ alert('Gambar gagal dibuat. Muat ulang halaman, lalu ulangi.'); })
+      .then(function(){
+        el.scaler.style.transform = prev;
+        btn.disabled = false; btn.textContent = 'Unduh PNG';
+      });
+  });
+
+  document.getElementById('btn-print').addEventListener('click', function(){ window.print(); });
+
+  var now = new Date();
+  el.tgl.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+
+  renderBackgrounds();
+  sync();
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(function(){ sync(); fit(); }); }
+  setTimeout(function(){ sync(); fit(); }, 80);
+  fit();
+})();
+</script>
+</body>
+</html>

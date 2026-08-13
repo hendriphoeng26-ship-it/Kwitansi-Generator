@@ -72,7 +72,7 @@ button:disabled{opacity:.5;cursor:wait}
 .colon{font-family:'Grenze',serif;font-size:21px;padding-bottom:4px;width:16px;flex:0 0 16px}
 .fill{flex:1;min-width:0;border-bottom:1.3px solid var(--rule);padding:0 0 4px 6px;min-height:28px}
 
-.blank-line{height:31px;border-bottom:1.3px solid var(--rule)}
+.blank-line{height:31px;border-bottom:1.3px solid var(--rule);padding:4px 0 4px 6px;overflow:hidden;white-space:nowrap}
 .blank-line.first{margin-top:6px}
 
 .spacer{flex:1}
@@ -135,7 +135,8 @@ button:disabled{opacity:.5;cursor:wait}
 
     <div class="group">
       <label for="f-untuk">Untuk pembayaran</label>
-      <textarea id="f-untuk">latihan pemadam kebakaran</textarea>
+      <textarea id="f-untuk" style="min-height:84px">latihan pemadam kebakaran</textarea>
+      <p class="hint">Teks mengalir sendiri ke baris 2 dan 3. Tekan Enter untuk memaksa pindah baris.</p>
     </div>
 
     <div class="group row2">
@@ -193,8 +194,8 @@ button:disabled{opacity:.5;cursor:wait}
                 <span class="fill val" id="o-untuk">latihan pemadam kebakaran</span>
               </div>
 
-              <div class="blank-line first"></div>
-              <div class="blank-line"></div>
+              <div class="blank-line first val" id="o-untuk2"></div>
+              <div class="blank-line val" id="o-untuk3"></div>
 
               <div class="spacer"></div>
 
@@ -308,6 +309,8 @@ button:disabled{opacity:.5;cursor:wait}
     oDari:document.getElementById('o-dari'),
     oTerbilang:document.getElementById('o-terbilang'),
     oUntuk:document.getElementById('o-untuk'),
+    oUntuk2:document.getElementById('o-untuk2'),
+    oUntuk3:document.getElementById('o-untuk3'),
     oRp:document.getElementById('o-rp'),
     oPlace:document.getElementById('o-place'),
     stub:document.getElementById('stub'),
@@ -327,18 +330,49 @@ button:disabled{opacity:.5;cursor:wait}
     }
   }
 
+  /* isi teks ke beberapa baris; kata berpindah sendiri saat baris penuh */
+  function coba(text, nodes){
+    var paras = String(text).split('\n'), idx = 0, p, w, words, node, prev;
+    nodes.forEach(function(n){ n.textContent = ''; });
+    for(p=0; p<paras.length; p++){
+      words = paras[p].trim().split(/\s+/).filter(Boolean);
+      if(!words.length){ idx++; continue; }
+      for(w=0; w<words.length; w++){
+        if(idx >= nodes.length) return false;
+        node = nodes[idx];
+        prev = node.textContent;
+        node.textContent = prev ? prev + ' ' + words[w] : words[w];
+        if(node.scrollWidth > node.clientWidth + 1){
+          node.textContent = prev;
+          if(prev === '') return false;
+          idx++; w--;
+        }
+      }
+      idx++;
+    }
+    return true;
+  }
+
+  function alirkan(text, nodes, maxPx, minPx){
+    var size = maxPx;
+    while(true){
+      nodes.forEach(function(n){ n.style.fontSize = size + 'px'; });
+      if(coba(text, nodes) || size <= minPx) return;
+      size -= 0.5;
+    }
+  }
+
   function sync(){
     el.oNo.textContent = el.no.value;
     el.oDari.textContent = el.dari.value;
-    el.oUntuk.textContent = el.untuk.value;
     el.oRp.textContent = group(onlyDigits(el.rp.value)) || '0';
     if(!manualTerbilang) el.terbilang.value = terbilangRupiah(nilai());
     el.oTerbilang.textContent = el.terbilang.value;
     var tgl = formatTanggal(el.tgl.value);
     el.oPlace.textContent = el.kota.value + (tgl ? ', ' + tgl : '');
     muatkan(el.oTerbilang, 20, 12);
-    muatkan(el.oUntuk, 20, 12);
     muatkan(el.oDari, 20, 13);
+    alirkan(el.untuk.value, [el.oUntuk, el.oUntuk2, el.oUntuk3], 20, 13);
   }
 
   ['no','dari','untuk','kota','tgl'].forEach(function(k){ el[k].addEventListener('input', sync); });
